@@ -1,0 +1,6 @@
+{$BASE_DOMAIN}, www.{$BASE_DOMAIN}, hub1.{$BASE_DOMAIN}, feeds.{$BASE_DOMAIN}, digest.{$BASE_DOMAIN} {
+    encode gzip zstd
+    reverse_proxy app:8000 {
+        header_up X-Real-IP {remote_host}
+    }
+}

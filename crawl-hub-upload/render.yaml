@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: crawlhub-noc
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: ADMIN_API_KEY
+        value: ch_live_9f4a8c2e7b1d6034
+      - key: PORT
+        value: "10000"
+      - key: DB_PATH
+        value: /tmp/crawlhub-data/crawlhub.db
+      - key: DIGEST_BATCH_SIZE
+        value: "50"
+      - key: DIGEST_FLUSH_SECONDS
+        value: "60"
+      - key: ENABLE_FRESHNESS_WARMUP
+        value: "true"
