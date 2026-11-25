@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CrawlHub NOC — J.A.R.V.I.S. Autonomous Crawl Command</title>
+<style>
+:root{
+  --bg:#020611;--sidebar:#060c1a;--panel:#0a1222;--panel2:#0f192e;--border:#1b2842;
+  --emerald:#10b981;--cyan:#06b6d4;--blue:#3b82f6;--violet:#a78bfa;--amber:#f59e0b;--red:#ef4444;
+  --text:#e2e8f0;--muted:#8899b4;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,-apple-system,Segoe UI,sans-serif;overflow-x:hidden}
+body{display:flex;min-height:100vh}
+
+/* Sidebar */
+.sidebar{width:248px;flex-shrink:0;background:linear-gradient(180deg,#070e1f 0%,#040813 100%);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:18px 14px;position:sticky;top:0;height:100vh}
+.logo{display:flex;align-items:center;gap:11px;padding:4px 6px 16px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.logo-ring{width:36px;height:36px;border-radius:10px;background:radial-gradient(circle,rgba(6,182,212,.25),rgba(16,185,129,.08));border:1px solid rgba(6,182,212,.45);display:grid;place-items:center;box-shadow:0 0 18px rgba(6,182,212,.22)}
+.logo-title{font-weight:900;font-size:.98rem;letter-spacing:.8px;color:#f8fafc}
+.logo-sub{font-size:.66rem;color:#22d3ee;letter-spacing:1.2px;text-transform:uppercase}
+.nav{display:flex;flex-direction:column;gap:4px;flex:1}
+.nav-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;color:var(--muted);cursor:pointer;font-size:.86rem;font-weight:600;border:1px solid transparent;transition:.15s}
+.nav-item:hover{background:rgba(30,41,59,.45);color:#f1f5f9}
+.nav-item.active{background:linear-gradient(90deg,rgba(6,182,212,.16),rgba(16,185,129,.06));border-color:rgba(6,182,212,.38);color:#22d3ee;box-shadow:inset 3px 0 0 #06b6d4}
+.nav-left{display:flex;align-items:center;gap:9px}
+.nav-badge{font-size:.7rem;padding:2px 7px;border-radius:999px;background:#111d34;color:#94a3b8;font-family:ui-monospace,monospace}
+.nav-item.active .nav-badge{background:rgba(6,182,212,.2);color:#67e8f9}
+.side-foot{border-top:1px solid var(--border);padding-top:12px;font-size:.76rem;color:var(--muted)}
+.health-bar{height:6px;background:#0f172a;border-radius:999px;overflow:hidden;margin:6px 0 10px}
+.health-fill{height:100%;background:linear-gradient(90deg,#10b981,#06b6d4);width:100%;transition:width .4s}
+
+/* Main */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;background:radial-gradient(circle at 25% 0%,rgba(6,182,212,.09),transparent 42%),radial-gradient(circle at 85% 5%,rgba(16,185,129,.08),transparent 38%)}
+.header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding:14px 22px;border-bottom:1px solid var(--border);background:rgba(6,12,26,.85);backdrop-filter:blur(12px);position:sticky;top:0;z-index:10}
+.hdr-left{display:flex;align-items:center;gap:10px}
+.page-title{font-weight:800;font-size:1.05rem;letter-spacing:.3px}
+.live-dot{width:9px;height:9px;border-radius:50%;background:var(--emerald);box-shadow:0 0 10px var(--emerald);animation:blink 1.6s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+.hdr-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.content{padding:18px 22px;max-width:1460px;width:100%;margin:0 auto}
+.view{display:none}.view.active{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* UI Primitives */
+.pill{font-size:.7rem;padding:3px 9px;border-radius:999px;font-weight:700;letter-spacing:.3px;display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);color:#34d399}
+.pill.cyan{border-color:rgba(6,182,212,.38);background:rgba(6,182,212,.12);color:#22d3ee}
+.pill.amber{border-color:rgba(245,158,11,.38);background:rgba(245,158,11,.12);color:#fbbf24}
+.pill.red{border-color:rgba(239,68,68,.38);background:rgba(239,68,68,.12);color:#f87171}
+.pill.vio{border-color:rgba(167,139,250,.38);background:rgba(167,139,250,.12);color:#c4b5fd}
+input,textarea,select,button{font:inherit;border-radius:9px;border:1px solid #24334d;background:#070e1c;color:#f1f5f9;padding:8px 12px;outline:none}
+input:focus,textarea:focus,select:focus{border-color:#06b6d4;box-shadow:0 0 0 2px rgba(6,182,212,.18)}
+button{background:linear-gradient(135deg,#10b981,#06b6d4);color:#022c22;font-weight:800;cursor:pointer;border:none;transition:.15s}
+button:hover{filter:brightness(1.1);transform:translateY(-1px)}
+button.sec{background:#101c33;color:#cbd5e1;border:1px solid #263859;font-weight:600}
+button.sec:hover{background:#162645;color:#fff}
+button.danger{background:rgba(239,68,68,.14);color:#fca5a5;border:1px solid rgba(239,68,68,.35);font-weight:600}
+button.sm{padding:5px 9px;font-size:.74rem;border-radius:7px}
+
+/* KPI Grid */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:1180px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:linear-gradient(180deg,rgba(15,25,46,.9),rgba(10,18,34,.95));border:1px solid var(--border);border-radius:13px;padding:14px 15px;position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,var(--cyan))}
+.kpi .lbl{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;font-weight:700}
+.kpi .val{font-size:1.55rem;font-weight:900;margin:6px 0 2px;letter-spacing:-.4px}
+.kpi .sub{font-size:.72rem;color:#64748b}
+
+/* Cards & Grids */
+.card{background:rgba(10,18,34,.92);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:16px;backdrop-filter:blur(8px)}
+.card-hdr{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.card-title{font-size:.84rem;font-weight:800;color:#93c5fd;text-transform:uppercase;letter-spacing:.8px;margin:0}
+.grid-noc{display:grid;grid-template-columns:1.7fr 1fr;gap:16px;margin-bottom:16px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:1050px){.grid-noc,.two-col{grid-template-columns:1fr}}
+
+/* Canvases & Console */
+canvas#radar{width:100%;height:360px;display:block;border-radius:11px;background:radial-gradient(circle at 50% 50%,#0a1930 0%,#030814 100%);border:1px solid #162642}
+canvas#chart{width:100%;height:125px;display:block;border-radius:10px;background:#050b18;border:1px solid #162642;margin-top:12px}
+.console{height:497px;overflow-y:auto;background:#040914;border:1px solid #162642;border-radius:11px;padding:10px 12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.74rem;line-height:1.55}
+.cline{display:flex;gap:8px;padding:4px 0;border-bottom:1px dashed rgba(30,41,59,.5)}
+.ctag{font-size:.66rem;padding:1px 6px;border-radius:4px;font-weight:800;flex-shrink:0;align-self:flex-start}
+
+/* Node Pulse Cards */
+.pulse-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(285px,1fr));gap:12px}
+.pcard{background:var(--panel2);border:1px solid var(--border);border-radius:13px;padding:14px;transition:border-color .2s}
+.pcard:hover{border-color:#2b436b}
+.ptop{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.phost{font-weight:800;font-size:.92rem;color:#f8fafc;word-break:break-all}
+.pip{font-family:ui-monospace,monospace;font-size:.82rem;color:#34d399;margin-top:2px}
+.prdns{font-family:ui-monospace,monospace;font-size:.71rem;color:var(--muted);min-height:16px;margin-bottom:10px;word-break:break-all}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px;text-align:center}
+.pbox{background:#060c19;border:1px solid #1b2842;border-radius:8px;padding:7px 4px}
+.pbox .l{font-size:.64rem;color:var(--muted);text-transform:uppercase}.pbox .v{font-size:.95rem;font-weight:800;margin-top:2px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:#060c19;padding:3px;border-radius:8px;border:1px solid #1b2842}
+.seg button{background:transparent;color:var(--muted);font-size:.71rem;padding:5px 2px;font-weight:700;border-radius:6px}
+.seg button.on-active{background:rgba(16,185,129,.22);color:#34d399}
+.seg button.on-warming{background:rgba(245,158,11,.22);color:#fbbf24}
+.seg button.on-cooldown{background:rgba(239,68,68,.22);color:#f87171}
+
+/* Dropzone & Tables */
+.dropzone{border:1.5px dashed #2a4066;border-radius:11px;padding:14px;text-align:center;color:var(--muted);font-size:.82rem;margin-bottom:10px;cursor:pointer;transition:.15s;background:#060d1b}
+.dropzone:hover,.dropzone.drag{border-color:#06b6d4;color:#22d3ee;background:rgba(6,182,212,.06)}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th,td{border-bottom:1px solid #18233a;padding:8px 7px;text-align:left;word-break:break-all}
+th{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.5px}
+tr:hover td{background:rgba(15,25,46,.55)}
+.mono{font-family:ui-monospace,monospace;font-size:.74rem}
+.ok{color:#34d399}.warn{color:#fbbf24}.err{color:#f87171}.cyan{color:#22d3ee}.vio{color:#c4b5fd}
+
+/* Auth Modal & Toasts */
+.modal{position:fixed;inset:0;background:rgba(2,6,17,.86);backdrop-filter:blur(10px);display:none;place-items:center;z-index:100}
+.modal.show{display:grid}
+.mbox{width:400px;max-width:92vw;background:#0a1222;border:1px solid #263b60;border-radius:16px;padding:24px;box-shadow:0 24px 70px rgba(0,0,0,.7)}
+.toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:120}
+.toast{background:#0d1a30;border:1px solid #25406b;border-left:3px solid #10b981;color:#f1f5f9;padding:10px 14px;border-radius:10px;font-size:.82rem;box-shadow:0 12px 30px rgba(0,0,0,.5);animation:fade .2s}
+</style>
+</head>
+<body>
+
+<!-- AUTH MODAL -->
+<div id="authModal" class="modal">
+  <div class="mbox">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div class="logo-ring">⚡</div>
+      <div><div class="logo-title">CRAWLHUB NOC</div><div class="logo-sub">J.A.R.V.I.S. Command Authentication</div></div>
+    </div>
+    <p style="font-size:.82rem;color:var(--muted);margin:0 0 14px">Enter your <code class="cyan">ADMIN_API_KEY</code> to open the live SSE telemetry stream and control plane.</p>
+    <input id="modalKey" type="password" placeholder="ADMIN_API_KEY" style="width:100%;margin-bottom:12px" onkeydown="if(event.key==='Enter')loginModal()">
+    <button style="width:100%;padding:10px" onclick="loginModal()">Authenticate &amp; Launch NOC</button>
+    <div id="authErr" class="err mono" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-ring">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
+    </div>
+    <div>
+      <div class="logo-title">CRAWLHUB</div>
+      <div class="logo-sub">J.A.R.V.I.S. NOC v2</div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-item active" onclick="go('v_noc',this,'Command Center')"><span class="nav-left">📡 Command Center</span><span id="nb_nodes" class="nav-badge">0</span></div>
+    <div class="nav-item" onclick="go('v_queue',this,'Submit & Queue')"><span class="nav-left">🚀 Submit &amp; Queue</span><span id="nb_urls" class="nav-badge">0</span></div>
+    <div class="nav-item" onclick="go('v_digests',this,'Digests & Sitemaps')"><span class="nav-left">📦 Digests &amp; Maps</span><span id="nb_dig" class="nav-badge">0</span></div>
+    <div class="nav-item" onclick="go('v_cf',this,'Nodes & Cloudflare')"><span class="nav-left">☁️ Cloudflare &amp; Nodes</span><span class="nav-badge">API</span></div>
+    <div class="nav-item" onclick="go('v_rss',this,'RSS & WebSub Hub')"><span class="nav-left">🔔 RSS &amp; WebSub</span><span class="nav-badge">204</span></div>
+    <div class="nav-item" onclick="go('v_bots',this,'Bot Forensics')"><span class="nav-left">🛡️ Bot Forensics</span><span id="nb_bots" class="nav-badge">0</span></div>
+  </nav>
+
+  <div class="side-foot">
+    <div style="display:flex;justify-content:space-between"><span>Cluster Health</span><span id="s_health" class="ok mono">100%</span></div>
+    <div class="health-bar"><div id="s_hbar" class="health-fill"></div></div>
+    <div style="display:flex;gap:6px">
+      <button class="sec sm" style="flex:1" onclick="loadAll(true)">Sync</button>
+      <button class="danger sm" onclick="logout()">Lock</button>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+  <header class="header">
+    <div class="hdr-left">
+      <span class="live-dot"></span>
+      <span id="pageTitle" class="page-title">Command Center</span>
+      <span id="ssePill" class="pill amber">SSE: CONNECTING</span>
+    </div>
+    <div class="hdr-right">
+      <button id="simBtn" class="sec sm" onclick="toggleSim()">▶ Live Radar Demo: OFF</button>
+      <button class="sec sm" onclick="pingAllWebSub()">⚡ Ping All WebSub</button>
+      <button class="sec sm" onclick="downloadCsv()">↓ Export CSV</button>
+      <span id="clock" class="mono" style="color:var(--muted)">--:--:-- UTC</span>
+    </div>
+  </header>
+
+  <div class="content">
+    <!-- KPI BAR (ALWAYS VISIBLE) -->
+    <div class="kpis">
+      <div class="kpi" style="--accent:#3b82f6"><div class="lbl">Total URLs</div><div id="k_total" class="val">0</div><div id="k_wait_sub" class="sub">0 queued / ready</div></div>
+      <div class="kpi" style="--accent:#10b981"><div class="lbl">Bot Verified</div><div id="k_ver" class="val ok">0</div><div id="k_pub_sub" class="sub">0 published / websub</div></div>
+      <div class="kpi" style="--accent:#06b6d4"><div class="lbl">Avg Bot Latency</div><div id="k_lat" class="val cyan">--</div><div class="sub">digest → verified hit</div></div>
+      <div class="kpi" style="--accent:#10b981"><div class="lbl">Preflight Health</div><div id="k_rate" class="val ok">100%</div><div id="k_fail_sub" class="sub">0 failed</div></div>
+      <div class="kpi" style="--accent:#10b981"><div class="lbl">Googlebot 2.1</div><div id="k_gb" class="val ok">0</div><div class="sub">FCrDNS verified search</div></div>
+      <div class="kpi" style="--accent:#a78bfa"><div class="lbl">FeedFetcher / Other</div><div id="k_ff" class="val vio">0</div><div id="k_go_sub" class="sub">0 GoogleOther ignored</div></div>
+    </div>
+
+    <!-- VIEW 1: COMMAND CENTER -->
+    <section id="v_noc" class="view active">
+      <div class="grid-noc">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-hdr">
+            <h3 class="card-title">Live Bot Traffic Radar &amp; 20-Min Velocity</h3>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <span class="pill">Googlebot 2.1</span>
+              <span class="pill vio">FeedFetcher</span>
+              <span class="pill cyan">WebSub</span>
+              <span class="pill amber">Digest</span>
+            </div>
+          </div>
+          <canvas id="radar"></canvas>
+          <canvas id="chart"></canvas>
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-hdr">
+            <h3 class="card-title">Live Telemetry Stream</h3>
+            <button class="sec sm" onclick="document.getElementById('console').innerHTML=''">Clear</button>
+          </div>
+          <div id="console" class="console"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-hdr">
+          <h3 class="card-title">Hub Node Googlebot Pulse Grid (Auto-Failover Pool)</h3>
+          <span class="mono" style="color:var(--muted)">Strict Googlebot/2.1 FCrDNS Verification</span>
+        </div>
+        <div id="pulse" class="pulse-grid"></div>
+      </div>
+    </section>
+
+    <!-- VIEW 2: SUBMIT & QUEUE -->
+    <section id="v_queue" class="view">
+      <div class="two-col">
+        <div class="card">
+          <div class="card-hdr"><h3 class="card-title">Bulk URL Submission (HTML &amp; PDF)</h3><span id="u_counter" class="pill cyan">0 URLs</span></div>
+          <div id="drop" class="dropzone" onclick="document.getElementById('fileIn').click()">
+            Drop a <strong>.txt</strong> or <strong>.csv</strong> URL list here, or click to upload
+            <input id="fileIn" type="file" accept=".txt,.csv" style="display:none" onchange="readFile(this.files[0])">
+          </div>
+          <textarea id="urls" rows="7" style="width:100%" oninput="countInput()" placeholder="https://example.com/article-1&#10;https://example.com/document.pdf"></textarea>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 0">
+            <label style="font-size:.82rem;color:#cbd5e1"><input type="checkbox" id="skip"> Skip pre-flight (instant bulk mode)</label>
+            <button onclick="submitUrls()">Dispatch Batch</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><h3 class="card-title">Queue Maintenance &amp; Recovery</h3></div>
+          <p style="font-size:.84rem;color:var(--muted);margin-top:0">Pre-flight automatically blocks 404/5xx/noindex URLs to protect your hub domains' Googlebot crawl trust. Retry transient timeouts or clear dead URLs in 1 click.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+            <button class="sec" onclick="retryFailed()">↻ Retry All Failed URLs</button>
+            <button class="danger" onclick="clearFailed()">🗑 Clear Failed URLs</button>
+            <button class="sec" onclick="downloadCsv()">↓ Export Full CSV</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hdr">
+          <h3 class="card-title">Submitted URLs Inspector</h3>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <input id="q" placeholder="Filter URL or domain..." style="width:230px" onkeydown="if(event.key==='Enter')loadAll()">
+            <button class="sec sm" onclick="loadAll()">Search</button>
+          </div>
+        </div>
+        <table><thead><tr><th>ID</th><th>Status</th><th>Topic</th><th>Type</th><th>URL</th><th>Digest</th><th>Bot Verified</th></tr></thead><tbody id="urlrows"></tbody></table>
+      </div>
+    </section>
+
+    <!-- VIEW 3: DIGESTS & SITEMAPS -->
+    <section id="v_digests" class="view">
+      <div class="card">
+        <div class="card-hdr"><h3 class="card-title">50-URL Batched Topic Digests</h3><span class="mono" style="color:var(--muted)">ETag / 304 Enabled • JSON-LD CollectionPage</span></div>
+        <table><thead><tr><th>Digest</th><th>Host</th><th>Topic</th><th>URLs</th><th>WebSub</th><th>Verified Bot Crawled</th><th>Latency</th><th>Created</th></tr></thead><tbody id="digests"></tbody></table>
+      </div>
+    </section>
+
+    <!-- VIEW 4: CLOUDFLARE & NODES -->
+    <section id="v_cf" class="view">
+      <div class="two-col">
+        <div class="card">
+          <div class="card-hdr"><h3 class="card-title">1-Click Cloudflare Domain Provisioner</h3><span class="pill cyan">API Automated</span></div>
+          <p style="font-size:.8rem;color:var(--muted);margin-top:0">Creates proxied DNS <code>A</code> records (<code>@</code>, <code>www</code>, <code>feeds</code>), sets SSL <code>Full</code>, configures Cache-Bypass rules, and adds the domain to your cluster.</p>
+          <input id="cf_domain" placeholder="Domain (e.g. myhub.com)" style="width:100%;margin-bottom:8px">
+          <input id="cf_zone" placeholder="Cloudflare Zone ID" style="width:100%;margin-bottom:8px">
+          <input id="cf_token" type="password" placeholder="Scoped API Token (DNS + SSL + Cache Rules)" style="width:100%;margin-bottom:8px">
+          <input id="cf_ip" placeholder="VPS Public IPv4" style="width:100%;margin-bottom:8px">
+          <select id="cf_state" style="width:100%;margin-bottom:10px"><option value="warming">Start in WARMING</option><option value="active">Start in ACTIVE</option></select>
+          <button style="width:100%" onclick="provisionCF()">Auto-Provision Cloudflare Zone</button>
+          <pre id="cf_out" class="mono ok" style="margin-top:10px;white-space:pre-wrap"></pre>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><h3 class="card-title">Add Free *.workers.dev or Manual Host</h3><span class="pill">$0 Domain Option</span></div>
+          <input id="nhost" placeholder="hub1.yourname.workers.dev or domain.com" style="width:100%;margin-bottom:8px">
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <select id="nstate" style="flex:1"><option value="warming">warming</option><option value="active" selected>active</option><option value="cooldown">cooldown</option></select>
+            <button onclick="saveHost()">Add / Update Host</button>
+          </div>
+          <h3 class="card-title" style="margin-bottom:8px">Active Cluster Hosts</h3>
+          <table><thead><tr><th>Host</th><th>State</th><th>Verified Hits</th><th>Action</th></tr></thead><tbody id="hosttbl"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 5: RSS & WEBSUB -->
+    <section id="v_rss" class="view">
+      <div class="two-col">
+        <div class="card">
+          <div class="card-hdr"><h3 class="card-title">Outbound Atom 1.0 Shards (WebSub Hub)</h3><button class="sm" onclick="pingAllWebSub()">⚡ Ping All Now</button></div>
+          <table><thead><tr><th>Host</th><th>Shard</th><th>Atom Feed URL</th><th>Action</th></tr></thead><tbody id="shards"></tbody></table>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><h3 class="card-title">Inbound Freshness Warm-Up Feeds</h3></div>
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <input id="rname" placeholder="Source name" style="width:130px">
+            <input id="rurl" placeholder="https://.../rss.xml" style="flex:1">
+            <button class="sm" onclick="addRss()">Add Feed</button>
+          </div>
+          <table><thead><tr><th>Source</th><th>Feed URL</th><th>Last Sync</th><th></th></tr></thead><tbody id="rsslist"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 6: BOT FORENSICS -->
+    <section id="v_bots" class="view">
+      <div class="card">
+        <div class="card-hdr">
+          <h3 class="card-title">Real-Time Crawler Forensics (FCrDNS + Google JSON Ranges)</h3>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="sec sm" onclick="botFilter='ALL';renderBots()">All</button>
+            <button class="sec sm" onclick="botFilter='VERIFIED_BOT';renderBots()">Verified Only</button>
+            <button class="sec sm" onclick="botFilter='SPOOFED_UA';renderBots()">Spoofed Only</button>
+            <button class="sec sm" onclick="botFilter='googlebot-2.1';renderBots()">Googlebot 2.1</button>
+            <button class="sec sm" onclick="botFilter='feedfetcher-google';renderBots()">FeedFetcher</button>
+          </div>
+        </div>
+        <table><thead><tr><th>Timestamp</th><th>Verdict</th><th>Bot Family</th><th>Host</th><th>IP Address</th><th>Reverse DNS</th><th>Path</th></tr></thead><tbody id="botrows"></tbody></table>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="toasts" class="toasts"></div>
+
+<script>
+let API_KEY = localStorage.getItem('crawlhub_api_key') || '';
+let es = null, pollTimer = null, simTimer = null, hydratedConsole = false;
+let currentHosts = [], allBots = [], timelineData = [], botFilter = 'ALL';
+const beams = [], ripples = [];
+const BOT_COL = {'googlebot-2.1':'#10b981','feedfetcher-google':'#a78bfa','bingbot':'#06b6d4','yandexbot':'#f59e0b','googleother':'#64748b','websub':'#38bdf8','digest':'#f59e0b'};
+
+function toast(msg, color='#10b981'){
+  const t = document.createElement('div'); t.className = 'toast'; t.style.borderLeftColor = color; t.textContent = msg;
+  document.getElementById('toasts').appendChild(t); setTimeout(()=>t.remove(), 3500);
+}
+function go(id, el, title){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(id).classList.add('active'); el.classList.add('active');
+  document.getElementById('pageTitle').textContent = title;
+  if(id==='v_noc') setTimeout(()=>{resizeCanvases();drawChart();}, 40);
+}
+function ago(iso){if(!iso)return 'Waiting';const s=Math.max(0,Math.floor((Date.now()-Date.parse(iso))/1000));return s<60?s+'s ago':Math.floor(s/60)+'m ago';}
+function addLog(tag, text, bg, fg){
+  const c = document.getElementById('console');
+  const row = document.createElement('div'); row.className = 'cline';
+  row.innerHTML = `<span style="color:#475569">${new Date().toISOString().slice(11,19)}</span><span class="ctag" style="background:${bg};color:${fg}">${tag}</span><span style="color:#cbd5e1">${text}</span>`;
+  c.prepend(row); while(c.children.length > 90) c.removeChild(c.lastChild);
+}
+
+// --- AUTH ---
+async function tryBoot(){
+  if(!API_KEY){ document.getElementById('authModal').classList.add('show'); return; }
+  const r = await fetch('/api/v1/stats', {headers:{'X-API-Key':API_KEY}});
+  if(!r.ok){ document.getElementById('authModal').classList.add('show'); return; }
+  document.getElementById('authModal').classList.remove('show');
+  connectSSE(); loadAll(); loadRss();
+}
+async function loginModal(){
+  const k = document.getElementById('modalKey').value.trim();
+  const r = await fetch('/api/v1/stats', {headers:{'X-API-Key':k}});
+  if(!r.ok){ document.getElementById('authErr').textContent = 'Invalid API key (HTTP ' + r.status + ')'; return; }
+  API_KEY = k; localStorage.setItem('crawlhub_api_key', k);
+  document.getElementById('authErr').textContent = '';
+  document.getElementById('authModal').classList.remove('show');
+  toast('Authenticated — J.A.R.V.I.S. NOC Online');
+  connectSSE(); loadAll(); loadRss();
+}
+function logout(){ localStorage.removeItem('crawlhub_api_key'); API_KEY=''; if(es)es.close(); location.reload(); }
+
+// --- DRAG & DROP FILE ---
+const drop = document.getElementById('drop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
+drop.addEventListener('drop',e=>{if(e.dataTransfer.files[0])readFile(e.dataTransfer.files[0]);});
+function readFile(f){if(!f)return; const rd=new FileReader(); rd.onload=()=>{document.getElementById('urls').value=rd.result; countInput(); toast('Loaded '+f.name);}; rd.readAsText(f);}
+function countInput(){
+  const arr = document.getElementById('urls').value.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+  const pdfs = arr.filter(u=>u.toLowerCase().endsWith('.pdf')).length;
+  document.getElementById('u_counter').textContent = `${arr.length} URLs (${pdfs} PDF)`;
+}
+
+// --- JARVIS RADAR CANVAS ---
+const rCvs = document.getElementById('radar'), rCtx = rCvs.getContext('2d');
+const cCvs = document.getElementById('chart'), cCtx = cCvs.getContext('2d');
+let sweep = 0;
+function resizeCanvases(){
+  [rCvs, cCvs].forEach(cv=>{
+    const rect = cv.getBoundingClientRect(); if(!rect.width) return;
+    cv.width = rect.width * devicePixelRatio; cv.height = rect.height * devicePixelRatio;
+    cv.getContext('2d').setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  });
+}
+window.addEventListener('resize', ()=>{resizeCanvases(); drawChart();});
+setTimeout(resizeCanvases, 60);
+
+const SRCS = [
+  {id:'googlebot-2.1', label:'Googlebot 2.1', x:0.10, y:0.20, color:'#10b981'},
+  {id:'feedfetcher-google', label:'FeedFetcher', x:0.10, y:0.42, color:'#a78bfa'},
+  {id:'bingbot', label:'Bingbot', x:0.10, y:0.64, color:'#06b6d4'},
+  {id:'websub', label:'WebSub Hub', x:0.10, y:0.84, color:'#38bdf8'},
+];
+function getNodes(w, h){
+  const list = currentHosts.length ? currentHosts : [{host:'127.0.0.1', state:'active', hits_5m:0}];
+  return list.slice(0, 8).map((n,i)=>({...n, px:w*0.87, py:h*(0.15+(i+0.5)*(0.72/Math.max(1,Math.min(8,list.length))))}));
+}
+function fireBeam(fromId, hostName, color, outbound=false){
+  const w = rCvs.width/devicePixelRatio, h = rCvs.height/devicePixelRatio; if(!w) return;
+  const src = SRCS.find(s=>s.id===fromId) || SRCS[0];
+  const nodes = getNodes(w, h);
+  const dst = nodes.find(n=>n.host===hostName) || nodes[Math.floor(Math.random()*nodes.length)];
+  const x1=src.x*w, y1=src.y*h, x2=dst.px, y2=dst.py;
+  beams.push({
+    sx:outbound?x2:x1, sy:outbound?y2:y1, ex:outbound?x1:x2, ey:outbound?y1:y2,
+    cx:w*0.5, cy:h*0.5+(Math.random()-0.5)*70, t:0, spd:0.022+Math.random()*0.014, color:color||src.color
+  });
+}
+function qbez(a,b,c,t){const u=1-t;return u*u*a+2*u*t*b+t*t*c;}
+
+function drawRadar(){
+  const w = rCvs.width/devicePixelRatio, h = rCvs.height/devicePixelRatio;
+  if(!w||!h){requestAnimationFrame(drawRadar);return;}
+  rCtx.clearRect(0,0,w,h);
+
+  // Subtle blueprint grid
+  rCtx.strokeStyle='rgba(30,41,59,0.28)'; rCtx.lineWidth=1;
+  for(let x=0;x<w;x+=36){rCtx.beginPath();rCtx.moveTo(x,0);rCtx.lineTo(x,h);rCtx.stroke();}
+  for(let y=0;y<h;y+=36){rCtx.beginPath();rCtx.moveTo(0,y);rCtx.lineTo(w,y);rCtx.stroke();}
+
+  const cx=w*0.5, cy=h*0.5, R=Math.min(w,h)*0.40;
+  [0.32,0.65,1].forEach(k=>{rCtx.strokeStyle='rgba(6,182,212,0.18)';rCtx.beginPath();rCtx.arc(cx,cy,R*k,0,Math.PI*2);rCtx.stroke();});
+  sweep=(sweep+0.016)%(Math.PI*2);
+  rCtx.beginPath();rCtx.moveTo(cx,cy);rCtx.arc(cx,cy,R,sweep,sweep+0.5);rCtx.closePath();
+  rCtx.fillStyle='rgba(16,185,129,0.09)';rCtx.fill();
+
+  const nodes = getNodes(w,h);
+  rCtx.strokeStyle='rgba(51,65,85,0.35)';
+  SRCS.forEach(s=>{rCtx.beginPath();rCtx.moveTo(s.x*w,s.y*h);rCtx.quadraticCurveTo(cx,cy,cx,cy);rCtx.stroke();});
+  nodes.forEach(n=>{rCtx.beginPath();rCtx.moveTo(cx,cy);rCtx.lineTo(n.px,n.py);rCtx.stroke();});
+
+  // Core
+  rCtx.beginPath();rCtx.arc(cx,cy,26,0,Math.PI*2);rCtx.fillStyle='#061326';rCtx.fill();
+  rCtx.strokeStyle='#06b6d4';rCtx.lineWidth=2;rCtx.stroke();
+  rCtx.fillStyle='#22d3ee';rCtx.font='800 10px ui-monospace,monospace';rCtx.textAlign='center';rCtx.fillText('JARVIS',cx,cy+3);
+
+  SRCS.forEach(s=>{
+    const x=s.x*w, y=s.y*h;
+    rCtx.beginPath();rCtx.arc(x,y,7,0,Math.PI*2);rCtx.fillStyle=s.color;rCtx.fill();
+    rCtx.fillStyle='#cbd5e1';rCtx.font='600 11px system-ui';rCtx.textAlign='left';rCtx.fillText(s.label,x+12,y+4);
+  });
+  nodes.forEach(n=>{
+    const col=n.state==='active'?'#10b981':(n.state==='warming'?'#f59e0b':'#ef4444');
+    rCtx.beginPath();rCtx.arc(n.px,n.py,8,0,Math.PI*2);rCtx.fillStyle=col;rCtx.fill();
+    rCtx.fillStyle='#f8fafc';rCtx.font='700 11px ui-monospace,monospace';rCtx.textAlign='right';rCtx.fillText(n.host.slice(0,24),n.px-13,n.py+4);
+  });
+
+  // Additive glowing curved beams
+  rCtx.save(); rCtx.globalCompositeOperation='lighter';
+  for(let i=beams.length-1;i>=0;i--){
+    const b=beams[i]; b.t+=b.spd;
+    if(b.t>=1){ripples.push({x:b.ex,y:b.ey,r:6,col:b.color,a:0.95});beams.splice(i,1);continue;}
+    const px=qbez(b.sx,b.cx,b.ex,b.t), py=qbez(b.sy,b.cy,b.ey,b.t);
+    const t0=Math.max(0,b.t-0.16), tx=qbez(b.sx,b.cx,b.ex,t0), ty=qbez(b.sy,b.cy,b.ey,t0);
+    const g=rCtx.createLinearGradient(tx,ty,px,py); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,b.color);
+    rCtx.strokeStyle=g; rCtx.lineWidth=3.2; rCtx.beginPath(); rCtx.moveTo(tx,ty); rCtx.lineTo(px,py); rCtx.stroke();
+    rCtx.beginPath(); rCtx.arc(px,py,4,0,Math.PI*2); rCtx.fillStyle='#fff'; rCtx.fill();
+  }
+  rCtx.restore();
+
+  for(let i=ripples.length-1;i>=0;i--){
+    const rp=ripples[i]; rp.r+=1.25; rp.a-=0.032;
+    if(rp.a<=0){ripples.splice(i,1);continue;}
+    rCtx.strokeStyle=rp.col; rCtx.globalAlpha=rp.a; rCtx.lineWidth=2;
+    rCtx.beginPath(); rCtx.arc(rp.x,rp.y,rp.r,0,Math.PI*2); rCtx.stroke(); rCtx.globalAlpha=1;
+  }
+  requestAnimationFrame(drawRadar);
+}
+requestAnimationFrame(drawRadar);
+
+function drawChart(){
+  const w=cCvs.width/devicePixelRatio, h=cCvs.height/devicePixelRatio; if(!w||!h)return;
+  cCtx.clearRect(0,0,w,h);
+  const data = timelineData.length ? timelineData : Array.from({length:20},()=>({label:'',gb:0,ff:0,ot:0}));
+  const maxV = Math.max(4, ...data.map(d=>d.gb+d.ff+d.ot));
+  const pad=22, cw=w-pad*2, ch=h-28, step=cw/Math.max(1,data.length-1);
+  // Grid
+  cCtx.strokeStyle='rgba(30,41,59,.5)'; cCtx.lineWidth=1;
+  [0,0.5,1].forEach(k=>{const y=12+ch*k; cCtx.beginPath();cCtx.moveTo(pad,y);cCtx.lineTo(w-pad,y);cCtx.stroke();});
+  // Area
+  cCtx.beginPath(); cCtx.moveTo(pad,12+ch);
+  data.forEach((d,i)=>{const x=pad+i*step, y=12+ch-((d.gb+d.ff)/maxV)*ch; cCtx.lineTo(x,y);});
+  cCtx.lineTo(pad+(data.length-1)*step,12+ch); cCtx.closePath();
+  const gr=cCtx.createLinearGradient(0,12,0,12+ch); gr.addColorStop(0,'rgba(16,185,129,.35)'); gr.addColorStop(1,'rgba(16,185,129,0)');
+  cCtx.fillStyle=gr; cCtx.fill();
+  // Line
+  cCtx.beginPath();
+  data.forEach((d,i)=>{const x=pad+i*step, y=12+ch-((d.gb+d.ff)/maxV)*ch; i?cCtx.lineTo(x,y):cCtx.moveTo(x,y);});
+  cCtx.strokeStyle='#10b981'; cCtx.lineWidth=2; cCtx.stroke();
+  cCtx.fillStyle='#64748b'; cCtx.font='10px ui-monospace,monospace'; cCtx.textAlign='left';
+  cCtx.fillText('LIVE VERIFIED BOT VELOCITY (LAST 20 MIN)', pad, h-4);
+}
+
+// --- LIVE DEMO SIMULATOR (UI-ONLY, NEVER WRITES TO DB) ---
+function toggleSim(){
+  const btn = document.getElementById('simBtn');
+  if(simTimer){ clearInterval(simTimer); simTimer=null; btn.textContent='▶ Live Radar Demo: OFF'; toast('Radar demo stopped','#94a3b8'); return; }
+  btn.textContent='■ Live Radar Demo: ON'; toast('Live Radar Demo running (UI preview only)','#06b6d4');
+  const pool = [
+    ['googlebot-2.1','GOOGLEBOT','crawl-66-249-74-230.googlebot.com → /digest/1','rgba(16,185,129,.18)','#34d399',false],
+    ['websub','WEBSUB','POST pubsubhubbub.appspot.com (HTTP 204) shard-00.atom','rgba(6,182,212,.18)','#22d3ee',true],
+    ['feedfetcher-google','FEEDFETCH','66.249.64.42 → /feeds/shard-00.atom','rgba(167,139,250,.18)','#c4b5fd',false],
+    ['bingbot','BINGBOT','msnbot-40-77-167-12.search.msn.com → /digest/2','rgba(6,182,212,.18)','#67e8f9',false],
+  ];
+  const step = ()=>{
+    const it = pool[Math.floor(Math.random()*pool.length)];
+    const h = (currentHosts[0]&&currentHosts[0].host)||'127.0.0.1';
+    fireBeam(it[0], h, BOT_COL[it[0]], it[5]);
+    addLog(it[1]+' (DEMO)', it[2], it[3], it[4]);
+  };
+  step(); simTimer = setInterval(step, 950);
+}
+
+// --- SSE & DATA LOADING ---
+function connectSSE(){
+  if(es) es.close();
+  es = new EventSource('/api/v1/stream?key=' + encodeURIComponent(API_KEY));
+  es.onopen = ()=>{ const p=document.getElementById('ssePill'); p.textContent='SSE: LIVE'; p.className='pill'; addLog('SYSTEM','Connected to real-time SSE telemetry stream','rgba(6,182,212,.18)','#22d3ee'); };
+  es.onerror = ()=>{ const p=document.getElementById('ssePill'); p.textContent='SSE: RECONNECTING'; p.className='pill red'; };
+  es.onmessage = (ev)=>{
+    const e = JSON.parse(ev.data);
+    if(e.type==='bot_hit'){
+      fireBeam(e.bot_family, e.host, BOT_COL[e.bot_family], false);
+      addLog(e.bot_family.toUpperCase(), `${e.verdict} ${e.ip} (${e.rdns||'no-rdns'}) → ${e.host}${e.path}`, e.verdict==='VERIFIED_BOT'?'rgba(16,185,129,.2)':'rgba(239,68,68,.2)', e.verdict==='VERIFIED_BOT'?'#34d399':'#f87171');
+      loadAll();
+    } else if(e.type==='websub_ping'){
+      fireBeam('websub', e.host, '#38bdf8', true);
+      addLog('WEBSUB', `POST pubsubhubbub.appspot.com → ${e.feed_url} (HTTP ${e.status})`, 'rgba(6,182,212,.2)', '#22d3ee');
+      loadAll();
+    } else if(e.type==='digest_created'){
+      fireBeam('googlebot-2.1', e.host, '#f59e0b', true);
+      addLog('DIGEST', `Minted #${e.digest_id} (${e.url_count} URLs, ${e.topic}) on ${e.host}`, 'rgba(245,158,11,.2)', '#fbbf24');
+      loadAll();
+    } else if(e.type==='url_submitted'){
+      addLog('QUEUE', `+${e.accepted} URLs queued`, 'rgba(59,130,246,.2)', '#60a5fa');
+      loadAll();
+    }
+  };
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(loadAll, 8000);
+}
+
+async function loadAll(notify=false){
+  const q = encodeURIComponent((document.getElementById('q')||{value:''}).value.trim());
+  const r = await fetch('/api/v1/stats'+(q?'?q='+q:''), {headers:{'X-API-Key':API_KEY}});
+  if(!r.ok) return;
+  const s = await r.json();
+  currentHosts = s.hosts || []; allBots = s.recent_bot_hits || []; timelineData = s.timeline || [];
+  document.getElementById('clock').textContent = s.server_time_utc;
+  document.getElementById('nb_nodes').textContent = currentHosts.length;
+  document.getElementById('nb_urls').textContent = s.total_urls || 0;
+  document.getElementById('nb_dig').textContent = (s.recent_digests||[]).length;
+  document.getElementById('nb_bots').textContent = allBots.length;
+
+  const st = s.urls_by_status || {}, bc = s.bot_counts || {};
+  document.getElementById('k_total').textContent = s.total_urls || 0;
+  document.getElementById('k_wait_sub').textContent = `${(st.queued||0)+(st.ready||0)} queued / ready`;
+  document.getElementById('k_ver').textContent = st.bot_verified || 0;
+  document.getElementById('k_pub_sub').textContent = `${(st.published||0)+(st.websub_pinged||0)} published / websub`;
+  document.getElementById('k_lat').textContent = s.avg_latency_sec != null ? s.avg_latency_sec + 's' : '--';
+  document.getElementById('k_rate').textContent = s.success_rate + '%';
+  document.getElementById('k_fail_sub').textContent = `${st.preflight_failed||0} preflight failed`;
+  document.getElementById('k_gb').textContent = bc['googlebot-2.1'] || 0;
+  document.getElementById('k_ff').textContent = bc['feedfetcher-google'] || 0;
+  document.getElementById('k_go_sub').textContent = `${bc['googleother']||0} GoogleOther • ${s.spoofed_count||0} spoofed`;
+  document.getElementById('s_health').textContent = s.success_rate + '%';
+  document.getElementById('s_hbar').style.width = s.success_rate + '%';
+
+  document.getElementById('pulse').innerHTML = currentHosts.map(h=>`
+    <div class="pcard">
+      <div class="ptop"><span class="phost">${h.host}</span><span class="pill ${h.state==='active'?'':h.state==='warming'?'amber':'red'}">${h.state.toUpperCase()} • ${ago(h.last_bot_hit_at)}</span></div>
+      <div class="pip">${h.last_ip||'Awaiting verified Googlebot/2.1...'}</div>
+      <div class="prdns">${h.last_rdns||'FCrDNS verified hits appear live here'}</div>
+      <div class="pgrid">
+        <div class="pbox"><div class="l">5 Min</div><div class="v ok">${h.hits_5m}</div></div>
+        <div class="pbox"><div class="l">Today</div><div class="v">${h.hits_today}</div></div>
+        <div class="pbox"><div class="l">Digests</div><div class="v warn">#${h.digests_count}</div></div>
+      </div>
+      <div class="seg">
+        <button class="${h.state==='active'?'on-active':''}" onclick="setHostState('${h.host}','active')">Active</button>
+        <button class="${h.state==='warming'?'on-warming':''}" onclick="setHostState('${h.host}','warming')">Warming</button>
+        <button class="${h.state==='cooldown'?'on-cooldown':''}" onclick="setHostState('${h.host}','cooldown')">Cooldown</button>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('hosttbl').innerHTML = currentHosts.map(h=>`<tr><td>${h.host}</td><td class="${h.state==='active'?'ok':'warn'}">${h.state}</td><td>${h.verified_hits_total}</td><td><button class="danger sm" onclick="delHost('${h.host}')">Remove</button></td></tr>`).join('');
+  document.getElementById('digests').innerHTML = (s.recent_digests||[]).map(d=>`<tr><td><a class="cyan" target="_blank" href="/digest/${d.id}">#${d.id}</a></td><td>${d.host}</td><td><span class="pill cyan">${d.topic}</span></td><td>${d.url_count}</td><td>${d.websub_status||'-'}</td><td class="ok mono">${d.hub_crawled_at||'-'}</td><td class="mono">${d.latency_sec!=null?d.latency_sec+'s':'-'}</td><td class="mono">${d.created_at}</td></tr>`).join('');
+  document.getElementById('urlrows').innerHTML = (s.recent_urls||[]).map(u=>`<tr><td>#${u.id}</td><td class="${u.status==='bot_verified'?'ok':u.status==='preflight_failed'?'err':'warn'}">${u.status}</td><td>${u.topic}</td><td>${u.is_pdf?'PDF':'HTML'}</td><td>${u.url}</td><td>${u.digest_id?'#'+u.digest_id:'-'}</td><td class="mono">${u.hub_crawled_at||'-'}</td></tr>`).join('');
+  renderBots(); drawChart();
+  if(!hydratedConsole){
+    hydratedConsole = true;
+    const hist = [];
+    (s.recent_digests||[]).slice(0,10).forEach(d=>hist.push({ts:d.created_at,tag:'DIGEST',txt:`#${d.id} (${d.url_count} URLs, ${d.topic}) on ${d.host}${d.websub_status?' • WebSub '+d.websub_status:''}`,bg:'rgba(245,158,11,.2)',fg:'#fbbf24'}));
+    (s.recent_bot_hits||[]).slice(0,20).forEach(b=>hist.push({ts:b.ts,tag:b.bot_family.toUpperCase(),txt:`${b.verdict} ${b.ip} (${b.rdns||'no-rdns'}) → ${b.host||''}${b.path}`,bg:b.verdict==='VERIFIED_BOT'?'rgba(16,185,129,.2)':'rgba(239,68,68,.2)',fg:b.verdict==='VERIFIED_BOT'?'#34d399':'#f87171'}));
+    hist.sort((a,b)=>a.ts.localeCompare(b.ts)).forEach(x=>{
+      const c = document.getElementById('console');
+      const row = document.createElement('div'); row.className = 'cline';
+      row.innerHTML = `<span style="color:#475569">${(x.ts||'').slice(11,19)}</span><span class="ctag" style="background:${x.bg};color:${x.fg}">${x.tag}</span><span style="color:#cbd5e1">${x.txt}</span>`;
+      c.prepend(row);
+    });
+  }
+  if(notify) toast('Telemetry synced');
+}
+
+function renderBots(){
+  const list = allBots.filter(b=>botFilter==='ALL'||b.verdict===botFilter||b.bot_family===botFilter);
+  document.getElementById('botrows').innerHTML = list.map(b=>`<tr><td class="mono">${b.ts}</td><td class="${b.verdict==='VERIFIED_BOT'?'ok':'err'}">${b.verdict}</td><td>${b.bot_family}</td><td>${b.host||'-'}</td><td class="mono">${b.ip}</td><td class="mono">${b.rdns||'-'}</td><td class="mono">${b.path}</td></tr>`).join('') || '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:18px">No crawler hits recorded yet for this filter.</td></tr>';
+}
+
+async function loadRss(){
+  const r = await fetch('/api/v1/rss-sources', {headers:{'X-API-Key':API_KEY}}); if(!r.ok) return;
+  const d = await r.json();
+  document.getElementById('shards').innerHTML = (d.outbound_atom_shards||[]).map(s=>`<tr><td>${s.host}</td><td>#${s.shard}</td><td class="mono"><a class="cyan" target="_blank" href="${s.feed_url}">${s.feed_url}</a></td><td><button class="sec sm" onclick="pingWebSub('${s.host}',${s.shard})">Ping</button></td></tr>`).join('');
+  document.getElementById('rsslist').innerHTML = (d.external_sources||[]).map(x=>`<tr><td>${x.name}</td><td class="mono">${x.feed_url}</td><td class="mono">${x.last_fetched_at||'-'}</td><td><button class="danger sm" onclick="delRss(${x.id})">×</button></td></tr>`).join('');
+}
+
+async function submitUrls(){
+  const urls = document.getElementById('urls').value.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+  if(!urls.length) return toast('Paste at least 1 URL','#f59e0b');
+  const r = await fetch('/api/v1/submit',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':API_KEY},body:JSON.stringify({urls,skip_preflight:document.getElementById('skip').checked})});
+  const d = await r.json(); toast(`Accepted ${d.accepted} URLs (${d.rejected} rejected)`); setTimeout(loadAll,1500);
+}
+async function retryFailed(){ const d=await fetch('/api/v1/urls/retry-failed',{method:'POST',headers:{'X-API-Key':API_KEY}}).then(r=>r.json()); toast(`Re-queued ${d.requeued} failed URLs`); loadAll(); }
+async function clearFailed(){ const d=await fetch('/api/v1/urls/clear-failed',{method:'DELETE',headers:{'X-API-Key':API_KEY}}).then(r=>r.json()); toast(`Cleared ${d.deleted} failed URLs`,'#f59e0b'); loadAll(); }
+async function saveHost(){ await fetch('/api/v1/hosts',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':API_KEY},body:JSON.stringify({host:document.getElementById('nhost').value,state:document.getElementById('nstate').value})}); toast('Host saved'); loadAll(); loadRss(); }
+async function setHostState(host,state){ await fetch('/api/v1/hosts',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':API_KEY},body:JSON.stringify({host,state})}); toast(`${host} → ${state.toUpperCase()}`); loadAll(); }
+async function delHost(host){ await fetch('/api/v1/hosts/'+encodeURIComponent(host),{method:'DELETE',headers:{'X-API-Key':API_KEY}}); toast(`Removed ${host}`,'#f59e0b'); loadAll(); loadRss(); }
+async function provisionCF(){
+  document.getElementById('cf_out').textContent='Provisioning Cloudflare DNS + SSL + Cache Rules...';
+  const r=await fetch('/api/v1/cloudflare/provision',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':API_KEY},body:JSON.stringify({domain:document.getElementById('cf_domain').value,cf_zone_id:document.getElementById('cf_zone').value,cf_api_token:document.getElementById('cf_token').value,vps_ip:document.getElementById('cf_ip').value,initial_state:document.getElementById('cf_state').value})});
+  document.getElementById('cf_out').textContent=await r.text(); toast(r.ok?'Cloudflare zone provisioned!':'Provisioning failed',r.ok?'#10b981':'#ef4444'); loadAll(); loadRss();
+}
+async function pingWebSub(host,shard){ await fetch('/api/v1/websub/ping',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':API_KEY},body:JSON.stringify({host,shard})}); toast(`WebSub pinged: ${host} shard #${shard}`,'#06b6d4'); }
+async function pingAllWebSub(){ const d=await fetch('/api/v1/websub/ping-all',{method:'POST',headers:{'X-API-Key':API_KEY}}).then(r=>r.json()); toast(`Broadcast WebSub ping across ${d.pinged} shards`,'#06b6d4'); }
+async function addRss(){ await fetch('/api/v1/rss-sources',{method:'POST',headers:{'Content-Type':'application/json','X-API-Key':API_KEY},body:JSON.stringify({name:document.getElementById('rname').value,feed_url:document.getElementById('rurl').value})}); toast('RSS source added'); loadRss(); }
+async function delRss(id){ await fetch('/api/v1/rss-sources/'+id,{method:'DELETE',headers:{'X-API-Key':API_KEY}}); toast('RSS source removed','#f59e0b'); loadRss(); }
+async function downloadCsv(){ const r=await fetch('/api/v1/export.csv',{headers:{'X-API-Key':API_KEY}}); if(!r.ok)return; const a=document.createElement('a'); a.href=URL.createObjectURL(await r.blob()); a.download='crawlhub-urls.csv'; a.click(); toast('CSV exported'); }
+
+tryBoot();
+</script>
+</body>
+</html>

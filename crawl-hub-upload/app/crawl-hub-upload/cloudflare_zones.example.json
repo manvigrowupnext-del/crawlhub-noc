@@ -1,0 +1,18 @@
+[
+  {
+    "label": "zone-1",
+    "domain": "hub1.example.com",
+    "cf_zone_id": "REPLACE_ZONE_ID_1",
+    "cf_api_token": "REPLACE_SCOPED_TOKEN_1",
+    "vps_ip": "1.2.3.4",
+    "subdomains": ["@", "www", "feeds"]
+  },
+  {
+    "label": "zone-2",
+    "domain": "hub2.example.org",
+    "cf_zone_id": "REPLACE_ZONE_ID_2",
+    "cf_api_token": "REPLACE_SCOPED_TOKEN_2",
+    "vps_ip": "1.2.3.4",
+    "subdomains": ["@", "www", "feeds"]
+  }
+]
